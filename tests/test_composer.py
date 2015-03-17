@@ -615,36 +615,23 @@ class TestComposer(object):
             'COMPOSER_GITHUB_OAUTH_TOKEN': 'MADE_UP_TOKEN_VALUE'
         })
 
-        stream_output_stub = Dingus()
-        old_stream_output = self.extension_module.stream_output
-        self.extension_module.stream_output = stream_output_stub
-
-        old_rewrite = self.extension_module.utils.rewrite_cfgs
-        rewrite = Dingus()
+        instance_stub = Dingus()
+        instance_stub._set_return_value("""{"resources": {}}""")
+        stream_output_stub = Dingus('stream_output')
+        rewrite = Dingus('rewrite')
         self.extension_module.utils.rewrite_cfgs = rewrite
 
-        old_environment = os.environ
-        os.environ = {'COMPOSER_GITHUB_OAUTH_TOKEN': 'MADE_UP_TOKEN_VALUE'}
+        with patch('build_pack_utils.utils.rewrite_cfgs', rewrite):
+            with patch('os.environ', {'COMPOSER_GITHUB_OAUTH_TOKEN': 'MADE_UP_TOKEN_VALUE'}):
+                with patch('StringIO.StringIO.getvalue', instance_stub):
+                    with patch('composer.extension.stream_output', stream_output_stub):
+                        with patch('print', 
+                        ct = self.extension_module.ComposerExtension(ctx)
+                        builder_stub = Dingus(_ctx=ctx)
+                        ct._builder = builder_stub
+                        ct.run()
 
-        try:
-            ct = self.extension_module.ComposerExtension(ctx)
-
-            builder_stub = Dingus(_ctx=ctx)
-            ct._builder = builder_stub
-
-            github_oauth_token_is_valid_stub = Dingus(
-                'test_run_sets_github_oauth_token_if_present:'
-                'github_oauth_token_is_valid_stub')
-            github_oauth_token_is_valid_stub._set_return_value(True)
-            ct._github_oauth_token_is_valid = github_oauth_token_is_valid_stub
-
-            ct.run()
-
-            executed_command = stream_output_stub.calls()[0].args[1]
-        finally:
-            self.extension_module.stream_output = old_stream_output
-            self.extension_module.utils.rewrite_cfgs = old_rewrite
-            os.environ = old_environment
+        executed_command = stream_output_stub.calls()[1].args[1]
 
         assert executed_command.find('config') > 0, 'did not see "config"'
         assert executed_command.find('-g') > 0, 'did not see "-g"'
@@ -652,6 +639,8 @@ class TestComposer(object):
             'did not see "github-oauth.github.com"'
         assert executed_command.find('"MADE_UP_TOKEN_VALUE"') > 0, \
             'did not see "MADE_UP_TOKEN_VALUE"'
+
+        assert print.find
 
     def test_run_does_not_set_github_oauth_if_missing(self):
         ctx = utils.FormattedDict({
@@ -753,7 +742,7 @@ class TestComposer(object):
         instance_stub._set_return_value("""{}""")
 
         stream_output_stub = Dingus(
-            'test_github_oauth_token_uses_curl : stream_output')
+            'test_github_oauth_token : stream_output')
 
         with patch('StringIO.StringIO.getvalue', instance_stub):
             with patch('composer.extension.stream_output', stream_output_stub):
