@@ -148,8 +148,7 @@ class CloudFoundryInstaller(object):
             url = translated_url
 
         self._log.debug("Installing direct [%s]", url)
-        if not fileName:
-            fileName = urlparse(url).path.split('/')[-1]
+        fileName = urlparse(url).path.split('/')[-1]
         fileToInstall = os.path.join(self._ctx['TMPDIR'], fileName)
         self._dwn.download(url, fileToInstall)
 
